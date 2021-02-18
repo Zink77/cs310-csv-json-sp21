@@ -1,10 +1,16 @@
 package edu.jsu.mcis;
 
-import java.io.*;
-import java.util.*;
-import com.opencsv.*;
-import org.json.simple.*;
-import org.json.simple.parser.*;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;
+
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.Iterator;
+import java.util.List;
 
 public class Converter {
     
@@ -61,14 +67,55 @@ public class Converter {
         
         String results = "";
         
-        try {
+        try
+        {
             
             CSVReader reader = new CSVReader(new StringReader(csvString));
             List<String[]> full = reader.readAll();
             Iterator<String[]> iterator = full.iterator();
             
             // INSERT YOUR CODE HERE
-            
+
+            JSONObject jsonObject = new JSONObject();
+            JSONArray colHeader = new JSONArray();
+            JSONArray rowHeader = new JSONArray();
+            JSONArray currentData;
+            JSONArray data = new JSONArray();
+            String[] currentRow = iterator.next();
+
+            for (int i = 0; i < currentRow.length; ++i)
+            {
+                colHeader.add(currentRow[i]);
+            }
+
+            while (iterator.hasNext())
+            {
+                currentRow = iterator.next();
+                currentData = new JSONArray();
+
+                for (int i = 0; i < currentRow.length; ++i)
+                {
+                    if (i == 0)
+                    {
+                        rowHeader.add(currentRow[i]);
+                    }
+
+                    else
+                    {
+                        int stringToInt = Integer.parseInt(currentRow[i]);
+                        currentData.add(stringToInt);
+                    }
+                }
+
+                data.add(currentData);
+            }
+
+            jsonObject.put("colHeaders", colHeader);
+            jsonObject.put("rowHeaders", rowHeader);
+            jsonObject.put("data", data);
+
+            results = JSONValue.toJSONString(jsonObject);
+
         }        
         catch(Exception e) { return e.toString(); }
         
@@ -80,12 +127,46 @@ public class Converter {
         
         String results = "";
         
-        try {
+        try
+        {
 
             StringWriter writer = new StringWriter();
             CSVWriter csvWriter = new CSVWriter(writer, ',', '"', '\n');
             
             // INSERT YOUR CODE HERE
+
+            JSONParser parser = new JSONParser();
+            JSONObject jsonObject = (JSONObject)parser.parse(jsonString);
+
+            JSONArray colJArray = (JSONArray)jsonObject.get("colHeaders");
+            JSONArray rowJArray = (JSONArray)jsonObject.get("rowHeaders");
+            JSONArray dataJsonArray = (JSONArray)jsonObject.get("data");
+
+            String[] colHeaders = new String[5];
+
+            for (int i = 0; i < colJArray.size(); i++)
+            {
+                colHeaders[i] = (String)colJArray.get(i);
+            }
+
+            csvWriter.writeNext(colHeaders);
+
+            for (int i = 0; i < rowJArray.size(); i++)
+            {
+                JSONArray thisLine = (JSONArray)dataJsonArray.get(i);
+                String[] currentLine = new String[5];
+
+                currentLine[0] = (String)rowJArray.get(i);
+
+                for (int j = 0; j < thisLine.size(); j++)
+                {
+                    currentLine[j+1] = Long.toString((long)thisLine.get(j));
+                }
+
+                csvWriter.writeNext(currentLine);
+            }
+
+            results = writer.toString();
             
         }
         
